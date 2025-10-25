@@ -1,8 +1,9 @@
 {
   "name": "markdown-to-html-converter",
   "version": "1.0.0",
-  "description": "Converts markdown files to HTML with simple styling",
+  "description": "A Node.js CLI tool to convert Markdown files to styled HTML.",
   "main": "markdown_converter.js",
+  "type":"module",
   "scripts": {
     "start": "node markdown_converter.js"
   },
