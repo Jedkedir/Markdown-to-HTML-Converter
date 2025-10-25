@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A Node.js CLI tool to convert Markdown files to styled HTML.",
   "main": "markdown_converter.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
     "start": "node markdown_converter.js"
   },
@@ -24,6 +24,8 @@
   },
   "homepage": "https://github.com/Jedkedir/Markdown-to-HTML-Converter#readme",
   "dependencies": {
+    "chalk": "^5.6.2",
+    "highlight.js": "^11.11.1",
     "marked": "^16.4.1"
   }
 }
