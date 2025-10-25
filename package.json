@@ -1,0 +1,28 @@
+{
+  "name": "markdown-to-html-converter",
+  "version": "1.0.0",
+  "description": "Converts markdown files to HTML with simple styling",
+  "main": "markdown_converter.js",
+  "scripts": {
+    "start": "node markdown_converter.js"
+  },
+  "keywords": [
+    "markdown",
+    "html",
+    "cli",
+    "nodejs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jedkedir/Markdown-to-HTML-Converter.git"
+  },
+  "author": "Yididiya Kedir",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Jedkedir/Markdown-to-HTML-Converter/issues"
+  },
+  "homepage": "https://github.com/Jedkedir/Markdown-to-HTML-Converter#readme",
+  "dependencies": {
+    "marked": "^16.4.1"
+  }
+}
