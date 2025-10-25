@@ -17,10 +17,21 @@ marked.setOptions({
     }
 });
 
+/**
+ * Parse command-line arguments to determine input and output file paths.
+ * 
+ * The function supports the following command-line arguments:
+ * -o, --output <filename>: Set a custom output file path.
+ * 
+ * If no arguments are provided, the function will default to 'sample.md' as the input file and 'output.html' as the output file.
+ * 
+ * @returns {Object} An object containing the input and output file paths.
+ * @property {string} inputPath - The path to the Markdown input file.
+ * @property {string} outputPath - The path to the generated HTML output file.
+ */
 function parseArguments() {
     // Slice off 'node' and 'markdown_converter.js'
     const args = process.argv.slice(2); 
-    console.log(args);
     let inputPath = 'sample.md'; // Default input
     let outputPath = 'output.html'; // Default output
     let positionalArgCount = 0;
@@ -59,11 +70,23 @@ function parseArguments() {
     return { inputPath, outputPath };
 }
 
+/**
+ * Reads the content of a Markdown file and returns it as a string.
+ * @param {string} filePath The path to the Markdown file to read.
+ * @returns {string} The content of the Markdown file.
+ */
 function readMarkdownFile(filePath) {
   const markdownContent = fs.readFileSync(filePath, "utf8"); //read content from the file
   return markdownContent;// return the content read from the given file
 }
 
+/**
+ * Extracts the title from a given Markdown content.
+ * The title is expected to be the first line of the document, prefixed with a single #.
+ * If no title is found, a default title of "Converted Document" is returned.
+ * @param {string} markdownContent The Markdown content to extract the title from.
+ * @returns {string} The extracted title, or a default title if none is found.
+ */
 function extractTitle(markdownContent) {
   const titleMatch = markdownContent.match(/^#\s*(.*)/m);// use regEx to get the the title  
 
@@ -74,6 +97,13 @@ function extractTitle(markdownContent) {
   }
 }
 
+/**
+ * Generates a full HTML document with the given title and body content.
+ * The HTML template includes all necessary CSS for clean, styled output.
+ * @param {string} title The title to be displayed in the generated HTML document.
+ * @param {string} bodyHtml The HTML content to be embedded in the generated document.
+ * @returns {string} The generated HTML document as a string.
+ */
 function createHtmlTemplate(title, bodyHtml) {
     // This template embeds all necessary CSS for clean, styled output
     return `<!DOCTYPE html>
@@ -196,6 +226,11 @@ function createHtmlTemplate(title, bodyHtml) {
 }
 
 
+/**
+ * Converts a Markdown string to HTML and wraps it in a clean, styled HTML template.
+ * @param {string} markdownContent The Markdown string to be converted.
+ * @returns {string} The generated HTML document as a string.
+ */
 function convertAndWrap(markdownContent) {
   const pageTitle = extractTitle(markdownContent); // get the title
 
@@ -206,10 +241,23 @@ function convertAndWrap(markdownContent) {
   return fullHtml;// return the html
 }
 
+/**
+ * Writes the provided HTML content to a file at the specified output path.
+ * @param {string} outputPath The path where the HTML file will be written.
+ * @param {string} content The HTML content to be written to the file.
+ */
 function writeHtmlFile(outputPath, content) {
   fs.writeFileSync(outputPath, content, "utf8");// create a html file
 }
 
+/**
+ * Validates the file extensions of the input and output file paths.
+ * 
+ * @throws {Error} If the input file does not have a .md or .markdown extension.
+ * @throws {Error} If the output file does not have a .html or .htm extension.
+ * @param {string} inputPath The path to the input file.
+ * @param {string} outputPath The path to the output file.
+ */
 function validateFileExtensions(inputPath, outputPath) {
     // 1. Check Input File Extension (.md or .markdown)
     const inputExt = path.extname(inputPath).toLowerCase();
@@ -224,6 +272,12 @@ function validateFileExtensions(inputPath, outputPath) {
     }
 }
 
+/**
+ * The main entry point for the Markdown to HTML converter.
+ * This function reads the Markdown file content, converts it to full, styled HTML, and writes the final HTML to the output file.
+ * It also logs success messages and handles errors gracefully.
+ * @throws {Error} If an error occurs during the conversion process.
+ */
 async function main() {
     try {
         // 1. Determine input and output paths by parsing command-line arguments (NEW LOGIC)
@@ -244,12 +298,12 @@ async function main() {
         writeHtmlFile(finalOutputPath, fullHtmlContent);
 
         // 5. Log success message
-        console.log('\n======================================================');
-        console.log(`✅ Conversion successful!`);
-        console.log(`Input: ${path.basename(inputPath)}`);
-        console.log(`Output saved to: ${finalOutputPath}`);
-        console.log('Use -o <filename> to customize the output name.');
-        console.log('======================================================\n');
+        console.log(chalk.yellow('\n======================================================'));
+console.log(chalk.green('✅ Conversion successful!'));
+console.log(chalk.cyan(`Input: ${path.basename(inputPath)}`));
+console.log(chalk.cyan(`Output saved to: ${finalOutputPath}`));
+console.log(chalk.dim('Use -o <filename> to customize the output name.'));
+console.log(chalk.yellow('======================================================\n'));
 
     } catch (error) {
         // 6. Handle errors
@@ -258,10 +312,10 @@ async function main() {
              // Handle explicit argument parsing errors
             console.error(error.message);
         } else if (error.code === 'ENOENT') {
-            console.error(`Error: File not found at the specified path.`);
-            console.error(`Please ensure the input file exists: "${error.path}"`);
+            console.error(chalk.red(`Error: File not found at the specified path.`));
+            console.error(chalk.red(`Please ensure the input file exists: "${error.path}"`));
         } else {
-            console.error(`Detailed Error: ${error.message}`);
+            console.error(chalk.red(`Detailed Error: ${error.message}`));
         }
         process.exit(1); // Exit with error code to signal failure
     }
