@@ -1,22 +1,62 @@
 import { marked } from "marked";
 import * as fs from "fs";
 import * as path from "path";
+import hljs from 'highlight.js';
 
 
-function getFilePathFromArgs() {
-  const inputPath = process.argv[2];// get file path from the arguments
+marked.setOptions({
+    // Enable GFM (GitHub Flavored Markdown) and breaks
+    gfm: true,
+    breaks: true,
+    
+    // Custom highlight function for code blocks
+    highlight: function(code, lang) {
+        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+        // Use highlight.js to process the code
+        return hljs.highlight(code, { language }).value;
+    }
+});
 
-  if (inputPath) {
-    console.log(`Input file specified: ${inputPath}`);
-    return inputPath;// return file path if found 
-  } else {
-    const defaultPath = "sample.md";
-    console.log(`No input file provided. Defaulting to: ${defaultPath}`);
-    console.log(
-      "To use a different file, run: node markdown_converter.js <your-file.md>"
-    );
-    return defaultPath;// return a default file path if file is not found
-  }
+function parseArguments() {
+    // Slice off 'node' and 'markdown_converter.js'
+    const args = process.argv.slice(2); 
+    console.log(args);
+    let inputPath = 'sample.md'; // Default input
+    let outputPath = 'output.html'; // Default output
+    let positionalArgCount = 0;
+    let outputSetByFlag = false;
+
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+
+        if (arg === '-o' || arg === '--output') {
+            if (i + 1 < args.length) {
+                outputPath = args[i + 1];
+                outputSetByFlag = true;
+                i++; // Skip the next argument since we just processed it
+            } else {
+                // If flag is last argument, throw an error
+                throw new Error('Error: The output flag (-o or --output) requires a file path.');
+            }
+        } else if (arg.startsWith('-')) {
+            console.warn(`Warning: Unrecognized flag ignored: ${arg}`);
+        } else {
+            positionalArgCount++;
+
+            if (positionalArgCount === 1) {
+                // First positional argument is always the input path
+                inputPath = arg;
+            } else if (positionalArgCount === 2 && !outputSetByFlag) {
+                // Second positional argument sets the output path, only if -o was not used
+                outputPath = arg;
+            } else {
+                // Ignore subsequent positional arguments
+                console.warn(`Warning: Ignoring extra argument: ${arg}`);
+            }
+        }
+    }
+    
+    return { inputPath, outputPath };
 }
 
 function readMarkdownFile(filePath) {
@@ -35,18 +75,23 @@ function extractTitle(markdownContent) {
 }
 
 function createHtmlTemplate(title, bodyHtml) {
-  return `<!DOCTYPE html>
+    // This template embeds all necessary CSS for clean, styled output
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
     <!-- Load Inter font from Google Fonts -->
-    <link rel="preconnect" href="https:
-    <link rel="preconnect" href="https:
-    <link href="https:
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- HIGHLIGHT.JS STYLESHEET  -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+
     <style>
-       
+        /* Basic Styling for Readability */
         body { 
             font-family: 'Inter', sans-serif; 
             max-width: 850px; 
@@ -58,7 +103,7 @@ function createHtmlTemplate(title, bodyHtml) {
             border-radius: 10px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
-       
+        /* Responsive adjustments for smaller screens */
         @media (max-width: 600px) {
             body {
                 margin: 20px;
@@ -77,28 +122,31 @@ function createHtmlTemplate(title, bodyHtml) {
         h2 { font-size: 2rem; }
         h3 { font-size: 1.5rem; }
 
-       
+        /* General Code Block Styling */
         pre {
-            background-color: #f4f6f8;
+            /* Remove the custom background here, as highlight.js theme provides it */
             border: 1px solid #e5e7eb;
             border-radius: 6px; 
             overflow-x: auto; 
-            padding: 16px; 
+            padding: 0; /* highlight.js styles the inner code tag */
             margin: 20px 0;
         }
-        code {
+        /* Style for the code tag inside pre added by marked */
+        pre code {
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 0.95rem;
-            color: #374151;
+            line-height: 1.4;
+            display: block;
+            padding: 1em; /* Add padding back inside the highlighted block */
         }
-       
+        /* Inline code styling */
         p > code, li > code {
             background-color: #f0f0f5; 
             padding: 3px 6px;
             border-radius: 3px;
         }
 
-       
+        /* Link Styling */
         a { 
             color: #2563eb; 
             text-decoration: none; 
@@ -109,13 +157,33 @@ function createHtmlTemplate(title, bodyHtml) {
             text-decoration: underline; 
         }
 
-       
+        /* Lists */
         ul, ol { 
             margin: 15px 0 15px 25px; 
             padding-left: 0;
         }
         li {
             margin-bottom: 8px;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
         }
     </style>
 </head>
@@ -127,11 +195,12 @@ function createHtmlTemplate(title, bodyHtml) {
 </html>`;
 }
 
+
 function convertAndWrap(markdownContent) {
   const pageTitle = extractTitle(markdownContent); // get the title
 
   const htmlBodyFragments = marked.parse(markdownContent);// get the content
-
+    
   const fullHtml = createHtmlTemplate(pageTitle, htmlBodyFragments);// get the full html from the template
 
   return fullHtml;// return the html
@@ -141,41 +210,61 @@ function writeHtmlFile(outputPath, content) {
   fs.writeFileSync(outputPath, content, "utf8");// create a html file
 }
 
-async function main() {
-  const OUTPUT_FILENAME = "output.html";
-
-  try {
-    const inputPath = getFilePathFromArgs();// get the markdown file path
-
-    const outputPath = path.join(process.cwd(), OUTPUT_FILENAME);// configure the output path using the current working directory and with the name of output.html
-
-    const markdownContent = readMarkdownFile(inputPath);// get the content of the markdown file
-
-    const fullHtmlContent = convertAndWrap(markdownContent);// get the full html code using the template
-
-    writeHtmlFile(outputPath, fullHtmlContent);// create the html file using the configured output path
-
-    console.log("\n======================================================");
-    console.log(`Conversion successful!`);
-    console.log(`Input: ${path.basename(inputPath)}`);
-    console.log(`Output saved to: ${outputPath}`);
-    console.log(
-      "Open this file in your browser to view the styled documentation."
-    );
-    console.log("======================================================\n");
-  } catch (error) {
-    console.error("\n❌ An error occurred during the conversion process:");
-    if (error.code === "ENOENT") {
-      console.error(`Error: File not found at the specified path.`);
-      console.error(`Please ensure the input file exists: "${error.path}"`);
-      console.error(
-        "If running without arguments, ensure 'sample.md' is present."
-      );
-    } else {
-      console.error(`Detailed Error: ${error.message}`);
+function validateFileExtensions(inputPath, outputPath) {
+    // 1. Check Input File Extension (.md or .markdown)
+    const inputExt = path.extname(inputPath).toLowerCase();
+    if (inputExt !== '.md' && inputExt !== '.markdown') {
+        throw new Error(`Invalid Input File Extension: Input file must be a Markdown file (.md or .markdown). Found: ${inputExt}`);
     }
-    process.exit(1);
-  }
+
+    // 2. Check Output File Extension (.html or .htm)
+    const outputExt = path.extname(outputPath).toLowerCase();
+    if (outputExt !== '.html' && outputExt !== '.htm') {
+        throw new Error(`Invalid Output File Extension: Output file must be an HTML file (.html or .htm). Found: ${outputExt}`);
+    }
+}
+
+async function main() {
+    try {
+        // 1. Determine input and output paths by parsing command-line arguments (NEW LOGIC)
+        const { inputPath, outputPath } = parseArguments();
+
+        validateFileExtensions(inputPath, outputPath);
+        // Construct the full output path (Handles custom path/name)
+        const finalOutputPath = path.join(process.cwd(), outputPath);
+        
+        
+        // 2. Read the Markdown file content
+        const markdownContent = readMarkdownFile(inputPath);
+
+        // 3. Convert Markdown to full, styled HTML
+        const fullHtmlContent = convertAndWrap(markdownContent);
+
+        // 4. Write the final HTML to the output file
+        writeHtmlFile(finalOutputPath, fullHtmlContent);
+
+        // 5. Log success message
+        console.log('\n======================================================');
+        console.log(`✅ Conversion successful!`);
+        console.log(`Input: ${path.basename(inputPath)}`);
+        console.log(`Output saved to: ${finalOutputPath}`);
+        console.log('Use -o <filename> to customize the output name.');
+        console.log('======================================================\n');
+
+    } catch (error) {
+        // 6. Handle errors
+        console.error('\n❌ An error occurred during the conversion process:');
+        if (error.message.startsWith('Error: The output flag')) {
+             // Handle explicit argument parsing errors
+            console.error(error.message);
+        } else if (error.code === 'ENOENT') {
+            console.error(`Error: File not found at the specified path.`);
+            console.error(`Please ensure the input file exists: "${error.path}"`);
+        } else {
+            console.error(`Detailed Error: ${error.message}`);
+        }
+        process.exit(1); // Exit with error code to signal failure
+    }
 }
 
 main();
