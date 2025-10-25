@@ -1,73 +1,75 @@
 import { marked } from "marked";
 import * as fs from "fs";
 import * as path from "path";
-import hljs from 'highlight.js';
-
+import hljs from "highlight.js";
+import chalk from "chalk";
 
 marked.setOptions({
-    // Enable GFM (GitHub Flavored Markdown) and breaks
-    gfm: true,
-    breaks: true,
-    
-    // Custom highlight function for code blocks
-    highlight: function(code, lang) {
-        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-        // Use highlight.js to process the code
-        return hljs.highlight(code, { language }).value;
-    }
+  // Enable GFM (GitHub Flavored Markdown) and breaks
+  gfm: true,
+  breaks: true,
+
+  // Custom highlight function for code blocks
+  highlight: function (code, lang) {
+    const language = hljs.getLanguage(lang) ? lang : "plaintext";
+    // Use highlight.js to process the code
+    return hljs.highlight(code, { language }).value;
+  },
 });
 
 /**
  * Parse command-line arguments to determine input and output file paths.
- * 
+ *
  * The function supports the following command-line arguments:
  * -o, --output <filename>: Set a custom output file path.
- * 
+ *
  * If no arguments are provided, the function will default to 'sample.md' as the input file and 'output.html' as the output file.
- * 
+ *
  * @returns {Object} An object containing the input and output file paths.
  * @property {string} inputPath - The path to the Markdown input file.
  * @property {string} outputPath - The path to the generated HTML output file.
  */
 function parseArguments() {
-    // Slice off 'node' and 'markdown_converter.js'
-    const args = process.argv.slice(2); 
-    let inputPath = 'sample.md'; // Default input
-    let outputPath = 'output.html'; // Default output
-    let positionalArgCount = 0;
-    let outputSetByFlag = false;
+  // Slice off 'node' and 'markdown_converter.js'
+  const args = process.argv.slice(2);
+  let inputPath = "sample.md"; // Default input
+  let outputPath = "output.html"; // Default output
+  let positionalArgCount = 0;
+  let outputSetByFlag = false;
 
-    for (let i = 0; i < args.length; i++) {
-        const arg = args[i];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
 
-        if (arg === '-o' || arg === '--output') {
-            if (i + 1 < args.length) {
-                outputPath = args[i + 1];
-                outputSetByFlag = true;
-                i++; // Skip the next argument since we just processed it
-            } else {
-                // If flag is last argument, throw an error
-                throw new Error('Error: The output flag (-o or --output) requires a file path.');
-            }
-        } else if (arg.startsWith('-')) {
-            console.warn(`Warning: Unrecognized flag ignored: ${arg}`);
-        } else {
-            positionalArgCount++;
+    if (arg === "-o" || arg === "--output") {
+      if (i + 1 < args.length) {
+        outputPath = args[i + 1];
+        outputSetByFlag = true;
+        i++; // Skip the next argument since we just processed it
+      } else {
+        // If flag is last argument, throw an error
+        throw new Error(
+          "Error: The output flag (-o or --output) requires a file path."
+        );
+      }
+    } else if (arg.startsWith("-")) {
+      console.warn(`Warning: Unrecognized flag ignored: ${arg}`);
+    } else {
+      positionalArgCount++;
 
-            if (positionalArgCount === 1) {
-                // First positional argument is always the input path
-                inputPath = arg;
-            } else if (positionalArgCount === 2 && !outputSetByFlag) {
-                // Second positional argument sets the output path, only if -o was not used
-                outputPath = arg;
-            } else {
-                // Ignore subsequent positional arguments
-                console.warn(`Warning: Ignoring extra argument: ${arg}`);
-            }
-        }
+      if (positionalArgCount === 1) {
+        // First positional argument is always the input path
+        inputPath = arg;
+      } else if (positionalArgCount === 2 && !outputSetByFlag) {
+        // Second positional argument sets the output path, only if -o was not used
+        outputPath = arg;
+      } else {
+        // Ignore subsequent positional arguments
+        console.warn(`Warning: Ignoring extra argument: ${arg}`);
+      }
     }
-    
-    return { inputPath, outputPath };
+  }
+
+  return { inputPath, outputPath };
 }
 
 /**
@@ -77,7 +79,7 @@ function parseArguments() {
  */
 function readMarkdownFile(filePath) {
   const markdownContent = fs.readFileSync(filePath, "utf8"); //read content from the file
-  return markdownContent;// return the content read from the given file
+  return markdownContent; // return the content read from the given file
 }
 
 /**
@@ -88,12 +90,12 @@ function readMarkdownFile(filePath) {
  * @returns {string} The extracted title, or a default title if none is found.
  */
 function extractTitle(markdownContent) {
-  const titleMatch = markdownContent.match(/^#\s*(.*)/m);// use regEx to get the the title  
+  const titleMatch = markdownContent.match(/^#\s*(.*)/m); // use regEx to get the the title
 
   if (titleMatch && titleMatch[1]) {
-    return titleMatch[1].trim();// return the title
+    return titleMatch[1].trim(); // return the title
   } else {
-    return "Converted Document";// return a default title
+    return "Converted Document"; // return a default title
   }
 }
 
@@ -105,8 +107,8 @@ function extractTitle(markdownContent) {
  * @returns {string} The generated HTML document as a string.
  */
 function createHtmlTemplate(title, bodyHtml) {
-    // This template embeds all necessary CSS for clean, styled output
-    return `<!DOCTYPE html>
+  // This template embeds all necessary CSS for clean, styled output
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -225,7 +227,6 @@ function createHtmlTemplate(title, bodyHtml) {
 </html>`;
 }
 
-
 /**
  * Converts a Markdown string to HTML and wraps it in a clean, styled HTML template.
  * @param {string} markdownContent The Markdown string to be converted.
@@ -234,11 +235,11 @@ function createHtmlTemplate(title, bodyHtml) {
 function convertAndWrap(markdownContent) {
   const pageTitle = extractTitle(markdownContent); // get the title
 
-  const htmlBodyFragments = marked.parse(markdownContent);// get the content
-    
-  const fullHtml = createHtmlTemplate(pageTitle, htmlBodyFragments);// get the full html from the template
+  const htmlBodyFragments = marked.parse(markdownContent); // get the content
 
-  return fullHtml;// return the html
+  const fullHtml = createHtmlTemplate(pageTitle, htmlBodyFragments); // get the full html from the template
+
+  return fullHtml; // return the html
 }
 
 /**
@@ -247,29 +248,33 @@ function convertAndWrap(markdownContent) {
  * @param {string} content The HTML content to be written to the file.
  */
 function writeHtmlFile(outputPath, content) {
-  fs.writeFileSync(outputPath, content, "utf8");// create a html file
+  fs.writeFileSync(outputPath, content, "utf8"); // create a html file
 }
 
 /**
  * Validates the file extensions of the input and output file paths.
- * 
+ *
  * @throws {Error} If the input file does not have a .md or .markdown extension.
  * @throws {Error} If the output file does not have a .html or .htm extension.
  * @param {string} inputPath The path to the input file.
  * @param {string} outputPath The path to the output file.
  */
 function validateFileExtensions(inputPath, outputPath) {
-    // 1. Check Input File Extension (.md or .markdown)
-    const inputExt = path.extname(inputPath).toLowerCase();
-    if (inputExt !== '.md' && inputExt !== '.markdown') {
-        throw new Error(`Invalid Input File Extension: Input file must be a Markdown file (.md or .markdown). Found: ${inputExt}`);
-    }
+  // 1. Check Input File Extension (.md or .markdown)
+  const inputExt = path.extname(inputPath).toLowerCase();
+  if (inputExt !== ".md" && inputExt !== ".markdown") {
+    throw new Error(
+      `Invalid Input File Extension: Input file must be a Markdown file (.md or .markdown). Found: ${inputExt}`
+    );
+  }
 
-    // 2. Check Output File Extension (.html or .htm)
-    const outputExt = path.extname(outputPath).toLowerCase();
-    if (outputExt !== '.html' && outputExt !== '.htm') {
-        throw new Error(`Invalid Output File Extension: Output file must be an HTML file (.html or .htm). Found: ${outputExt}`);
-    }
+  // 2. Check Output File Extension (.html or .htm)
+  const outputExt = path.extname(outputPath).toLowerCase();
+  if (outputExt !== ".html" && outputExt !== ".htm") {
+    throw new Error(
+      `Invalid Output File Extension: Output file must be an HTML file (.html or .htm). Found: ${outputExt}`
+    );
+  }
 }
 
 /**
@@ -279,46 +284,48 @@ function validateFileExtensions(inputPath, outputPath) {
  * @throws {Error} If an error occurs during the conversion process.
  */
 async function main() {
-    try {
-        // 1. Determine input and output paths by parsing command-line arguments (NEW LOGIC)
-        const { inputPath, outputPath } = parseArguments();
+  try {
+    // 1. Determine input and output paths by parsing command-line arguments (NEW LOGIC)
+    const { inputPath, outputPath } = parseArguments();
 
-        validateFileExtensions(inputPath, outputPath);
-        // Construct the full output path (Handles custom path/name)
-        const finalOutputPath = path.join(process.cwd(), outputPath);
-        
-        
-        // 2. Read the Markdown file content
-        const markdownContent = readMarkdownFile(inputPath);
+    validateFileExtensions(inputPath, outputPath);
+    // Construct the full output path (Handles custom path/name)
+    const finalOutputPath = path.join(process.cwd(), outputPath);
 
-        // 3. Convert Markdown to full, styled HTML
-        const fullHtmlContent = convertAndWrap(markdownContent);
+    // 2. Read the Markdown file content
+    const markdownContent = readMarkdownFile(inputPath);
 
-        // 4. Write the final HTML to the output file
-        writeHtmlFile(finalOutputPath, fullHtmlContent);
+    // 3. Convert Markdown to full, styled HTML
+    const fullHtmlContent = convertAndWrap(markdownContent);
 
-        // 5. Log success message
-        console.log(chalk.yellow('\n======================================================'));
-console.log(chalk.green('✅ Conversion successful!'));
-console.log(chalk.cyan(`Input: ${path.basename(inputPath)}`));
-console.log(chalk.cyan(`Output saved to: ${finalOutputPath}`));
-console.log(chalk.dim('Use -o <filename> to customize the output name.'));
-console.log(chalk.yellow('======================================================\n'));
+    // 4. Write the final HTML to the output file
+    writeHtmlFile(finalOutputPath, fullHtmlContent);
 
-    } catch (error) {
-        // 6. Handle errors
-        console.error('\n❌ An error occurred during the conversion process:');
-        if (error.message.startsWith('Error: The output flag')) {
-             // Handle explicit argument parsing errors
-            console.error(error.message);
-        } else if (error.code === 'ENOENT') {
-            console.error(chalk.red(`Error: File not found at the specified path.`));
-            console.error(chalk.red(`Please ensure the input file exists: "${error.path}"`));
-        } else {
-            console.error(chalk.red(`Detailed Error: ${error.message}`));
-        }
-        process.exit(1); // Exit with error code to signal failure
+    // 5. Log success message
+    console.log(chalk.yellow("\n======================================================"));
+    console.log(chalk.green("✅ Conversion successful!"));
+    console.log(chalk.cyan(`Input: ${path.basename(inputPath)}`));
+    console.log(chalk.cyan(`Output saved to: ${finalOutputPath}`));
+    console.log(chalk.dim("Use -o <filename> to customize the output name."));
+    console.log(
+      chalk.yellow("======================================================\n")
+    );
+  } catch (error) {
+    // 6. Handle errors
+    console.error("\n❌ An error occurred during the conversion process:");
+    if (error.message.startsWith("Error: The output flag")) {
+      // Handle explicit argument parsing errors
+      console.error(error.message);
+    } else if (error.code === "ENOENT") {
+      console.error(chalk.red(`Error: File not found at the specified path.`));
+      console.error(
+        chalk.red(`Please ensure the input file exists: "${error.path}"`)
+      );
+    } else {
+      console.error(chalk.red(`Detailed Error: ${error.message}`));
     }
+    process.exit(1); // Exit with error code to signal failure
+  }
 }
 
 main();
